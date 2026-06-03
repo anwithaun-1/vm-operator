@@ -1150,7 +1150,7 @@ func (vs *vSphereVMProvider) reconcileLocation(vmCtx pkgctx.VirtualMachineContex
 		return err
 	}
 
-	currentCond := pkgcnd.Get(vmCtx.VM, vmopv1.VirtualMachineInValidLocation)
+	currentCond := pkgcond.Get(vmCtx.VM, vmopv1.VirtualMachineInValidLocation)
 
 	isVMInValidRP, err := validateVMResourcePool(vmCtx, expectedRootRPMoID, vcClient, resourcePolicies)
 	if err != nil {
@@ -1164,7 +1164,7 @@ func (vs *vSphereVMProvider) reconcileLocation(vmCtx pkgctx.VirtualMachineContex
 	// Handle Mismatch
 	if !isVMInValidRP || !isVMInValidFolder {
 		if currentCond == nil || currentCond.Status != metav1.ConditionFalse {
-			pkgcnd.MarkFalse(
+			pkgcond.MarkFalse(
 				vmCtx.VM,
 				vmopv1.VirtualMachineInValidLocation,
 				"LocationMismatch",
@@ -1179,7 +1179,7 @@ func (vs *vSphereVMProvider) reconcileLocation(vmCtx pkgctx.VirtualMachineContex
 	}
 
 	if currentCond == nil || currentCond.Status != metav1.ConditionTrue {
-		pkgcnd.MarkTrue(vmCtx.VM, vmopv1.VirtualMachineInValidLocation)
+		pkgcond.MarkTrue(vmCtx.VM, vmopv1.VirtualMachineInValidLocation)
 	}
 	return nil
 }
