@@ -94,6 +94,29 @@ func WaitForVirtualMachineConditionCreated(ctx context.Context, config *config.E
 		"Timed out waiting for VirtualMachine %s to be created on VC", vmName)
 }
 
+// WaitForVirtualMachinePVCVolumeCount waits until the VM's spec.volumes
+// contains exactly count PVC-backed volumes. Use it to wait for volumes that
+// are added asynchronously (e.g. a classic/boot disk promoted into a managed
+// PVC) to land in the VM spec before reading it.
+func WaitForVirtualMachinePVCVolumeCount(ctx context.Context, config *config.E2EConfig, client ctrlclient.Client, ns, vmName string, count int) {
+	By(fmt.Sprintf("Waiting for VirtualMachine %s/%s to have %d PVC volumes", ns, vmName, count))
+	Eventually(func(g Gomega) {
+		vm, err := utils.GetVirtualMachine(ctx, client, ns, vmName)
+		g.Expect(err).ToNot(HaveOccurred())
+
+		pvcCount := 0
+		for _, vol := range vm.Spec.Volumes {
+			if vol.PersistentVolumeClaim != nil {
+				pvcCount++
+			}
+		}
+
+		g.Expect(pvcCount).To(Equal(count),
+			"VirtualMachine %s/%s has %d PVC volumes, want %d", ns, vmName, pvcCount, count)
+	}, config.GetIntervals("default", "wait-virtual-machine-condition-update")...).Should(Succeed(),
+		"Timed out waiting for VirtualMachine %s to have %d PVC volumes", vmName, count)
+}
+
 // WaitForVirtualMachineImageCacheReady waits for VirtualMachineConditionImageCacheReady to become True.
 // This is needed for ISO-type images whose content library files must be cached on the datastore.
 func WaitForVirtualMachineImageCacheReady(ctx context.Context,
