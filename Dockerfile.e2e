@@ -123,6 +123,11 @@ ARG GOVC_DOWNLOAD_URL=https://github.com/vmware/govmomi/releases/download/v0.53.
 RUN curl -fsSL "${GOVC_DOWNLOAD_URL}" | tar -xz -C /usr/local/bin govc && \
     chmod +x /usr/local/bin/govc
 
+# yq — parse the feature inventory in enable-in-progress-features.sh.
+ARG YQ_DOWNLOAD_URL=https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_amd64
+RUN curl -fsSL "${YQ_DOWNLOAD_URL}" -o /usr/local/bin/yq && \
+    chmod 0755 /usr/local/bin/yq
+
 # packer — required by vmserviceapp E2E tests.
 ARG PACKER_DOWNLOAD_URL=https://releases.hashicorp.com/packer/1.9.1/packer_1.9.1_linux_amd64.zip
 RUN curl -fsSL "${PACKER_DOWNLOAD_URL}" -o /tmp/packer.zip
