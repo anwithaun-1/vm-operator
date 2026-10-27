@@ -10,9 +10,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG="${SCRIPT_DIR}/../../test/e2e/vmservice/config/in-progress-features.yaml"
 KUBE_CONFIG="${KUBECONFIG:-}"
-NAMESPACE=vmware-system-vmop
-DEPLOYMENT=vmware-system-vmop-controller-manager
-CONTAINER=manager
 CAP_RESOURCE=capabilities.iaas.vmware.com
 CAP_NAME=supervisor-capabilities
 TIMEOUT=600
@@ -39,9 +36,11 @@ Examples (from the repository root):
   source ./hack/e2e/setup-testbed-env.sh ./testbedInfo.json
   ./hack/e2e/enable-in-progress-features.sh
 
-The script enables capabilityOverride switches too. It patches capability spec
-and waits for platform activation, then sets VM Operator FSS environment values
-to true and rolls out the operator. It preserves platform activation rules.
+Each capability must specify value: true, and each VM Operator FSS must specify
+value: "true" and a shared target with namespace, deployment, and container.
+The script patches capability spec and waits for platform activation, then sets
+the FSS environment values on the YAML target and rolls out that deployment.
+It preserves platform activation rules.
 Only VM Operator environment FSSs are represented by kind: vmop-env; this does
 not change vCenter FSSs or provision underlying infrastructure. Failed activation
 is an error. Settings remain enabled after completion; there is no rollback.
@@ -120,29 +119,38 @@ jq -en --argjson doc "${INVENTORY}" --argjson entries "${FEATURE_ENTRIES}" '
     (([$entries[].key] | length) == ([$entries[].key] | unique | length)) and
     all($entries[];
         (.key | named("^[a-z][a-z0-9-]*$")) and
-        (.value | type == "object" and .lifecycle == "in-progress" and
+        (.value | type == "object" and
             (if .kind == "supervisor-capability" then
-                (.name | named("^supports_[A-Za-z0-9_]+$")) and
+                (.name | named("^(supports_[A-Za-z0-9_]+|Workload_Domain_Isolation_Supported)$")) and
+                (.value == true) and
                 (has("capabilityOverride") | not)
             elif .kind == "vmop-env" then
                 (.name | named("^FSS_[A-Z0-9_]+$")) and
-                (if has("capabilityOverride") then
-                    (.capabilityOverride | named("^supports_[A-Za-z0-9_]+$"))
-                 else true end)
+                (.value == "true") and
+                (.target | type == "object" and
+                    (.namespace | named("^[a-z0-9]([-a-z0-9]*[a-z0-9])?$")) and
+                    (.deployment | named("^[a-z0-9]([-a-z0-9.]*[a-z0-9])?$")) and
+                    (.container | named("^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"))) and
+                (has("capabilityOverride") | not)
             else false end))) and
     (([$entries[].value | [.kind, .name]] | length) ==
-     ([$entries[].value | [.kind, .name]] | unique | length))
-' >/dev/null || die "Invalid feature inventory: require schemaVersion 1, unique features, supported kinds/names, and lifecycle: in-progress"
+     ([$entries[].value | [.kind, .name]] | unique | length)) and
+    ([$entries[].value | select(.kind == "vmop-env") | .target] | unique | length == 1)
+' >/dev/null || die 'Invalid feature inventory: require schemaVersion 1, unique features, supported kinds/names, explicit value: true for capabilities, value: "true" for FSSs, and one shared VM Operator target; capabilityOverride is unsupported'
 
-CAPABILITIES="$(jq -c '[.features[] |
-    if .kind == "supervisor-capability" then .name
-    else .capabilityOverride // empty end] | unique' <<<"${INVENTORY}")"
-ENV_NAMES="$(jq -c '[.features[] | select(.kind == "vmop-env") | .name] | unique' <<<"${INVENTORY}")"
+VMOP_TARGET="$(jq -c '[.features[] | select(.kind == "vmop-env") | .target] | unique | .[0]' <<<"${INVENTORY}")"
+NAMESPACE="$(jq -r .namespace <<<"${VMOP_TARGET}")"
+DEPLOYMENT="$(jq -r .deployment <<<"${VMOP_TARGET}")"
+CONTAINER="$(jq -r .container <<<"${VMOP_TARGET}")"
+
+CAPABILITIES="$(jq -c '[.features[] | select(.kind == "supervisor-capability") | .name] | sort' <<<"${INVENTORY}")"
+ENV_SETTINGS="$(jq -c '[.features[] | select(.kind == "vmop-env") | {name, value}] | sort_by(.name)' <<<"${INVENTORY}")"
 CAP_COUNT="$(jq length <<<"${CAPABILITIES}")"
-ENV_COUNT="$(jq length <<<"${ENV_NAMES}")"
-log "Inventory: ${CAP_COUNT} capability switches (including overrides), ${ENV_COUNT} VM Operator FSS variables."
-jq -nr --argjson caps "${CAPABILITIES}" --argjson envs "${ENV_NAMES}" '
-    ($caps[] | "  capability: \(.)=true"), ($envs[] | "  vmop-env: \(.)=true")'
+ENV_COUNT="$(jq length <<<"${ENV_SETTINGS}")"
+log "Inventory: ${CAP_COUNT} capability switches, ${ENV_COUNT} VM Operator FSS variables."
+log "VM Operator target: ${NAMESPACE}/${DEPLOYMENT} (container: ${CONTAINER})."
+jq -nr --argjson caps "${CAPABILITIES}" --argjson envs "${ENV_SETTINGS}" '
+    ($caps[] | "  capability: \(.)=true"), ($envs[] | "  vmop-env: \(.name)=\(.value)")'
 if [[ "${DRY_RUN}" == true ]]; then
     log "Dry run complete: YAML validated; testbed access and activation were not checked."
     exit 0
@@ -232,12 +240,12 @@ fi
 # annotation guarantees a new rollout after activation even if envs were true.
 FAILURE_REASON="Failed to configure VM Operator FSS variables; see pod logs."
 DEPLOYMENT_JSON="$(get_deployment)"
-DEPLOYMENT_PATCH="$(jq -cn --argjson envs "${ENV_NAMES}" --arg container "${CONTAINER}" \
+DEPLOYMENT_PATCH="$(jq -cn --argjson envs "${ENV_SETTINGS}" --arg container "${CONTAINER}" \
     --arg stamp "$(date -u '+%Y-%m-%dT%H:%M:%SZ')-$$" \
     --arg rv "$(jq -r .metadata.resourceVersion <<<"${DEPLOYMENT_JSON}")" '
     {metadata: {resourceVersion: $rv}, spec: {template: {
         metadata: {annotations: {"vmoperator.vmware.com/in-progress-features-enabled-at": $stamp}},
-        spec: {containers: [{name: $container, env: [$envs[] | {name: ., value: "true", valueFrom: null}]}]}
+        spec: {containers: [{name: $container, env: [$envs[] | . + {valueFrom: null}]}]}
     }}}
 ')"
 log "Setting VM Operator FSS variables and rolling out ${NAMESPACE}/${DEPLOYMENT}..."
@@ -249,10 +257,10 @@ kubectl --kubeconfig="${KUBE_CONFIG}" --request-timeout="${TIMEOUT}s" -n "${NAME
 
 FAILURE_REASON="Failed to verify enabled features after VM Operator rollout; see pod logs."
 DEPLOYMENT_JSON="$(get_deployment)"
-jq -e --arg container "${CONTAINER}" --argjson names "${ENV_NAMES}" '
+jq -e --arg container "${CONTAINER}" --argjson settings "${ENV_SETTINGS}" '
     [.spec.template.spec.containers[] | select(.name == $container) | .env[]?] as $envs |
-    all($names[]; . as $name |
-        ([$envs[] | select(.name == $name and .value == "true" and .valueFrom == null)] | length) == 1)
+    all($settings[]; . as $setting |
+        ([$envs[] | select(.name == $setting.name and .value == $setting.value and .valueFrom == null)] | length) == 1)
 ' <<<"${DEPLOYMENT_JSON}" >/dev/null || die "VM Operator FSS values changed during rollout"
 if [[ "${CAP_COUNT}" -gt 0 ]]; then
     CAP_JSON="$(get_capabilities)"

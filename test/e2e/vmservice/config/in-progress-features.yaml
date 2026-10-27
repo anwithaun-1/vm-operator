@@ -1,118 +1,107 @@
-# In-progress FSS and Supervisor capability inventory for the E2E workload.
-# All entries are classified as in-progress per the requested scope.
-# Names are VM Operator environment keys or Supervisor capability keys.
-# Platform FSS control names may differ from VM Operator environment keys.
+# Capability and FSS inventory for the 95 remaining experimental E2E tests.
+# Supervisor capability names: WCP_CI_SUPERVISOR_CAPABILITIES.
+# VM Operator flags: targeted Deployment environment updates.
 
 schemaVersion: 1
 features:
+  workload-isolation:
+    kind: supervisor-capability
+    name: Workload_Domain_Isolation_Supported
+    value: true
   iaas-compute-policies:
-    kind: "supervisor-capability"
-    name: "supports_iaas_compute_policies"
-    lifecycle: "in-progress"
-    evidence: "pkg/config/capabilities/capabilities.go:89"
-  controlled-rebalancing:
-    kind: "supervisor-capability"
-    name: "supports_infrapolicy_controlled_rebalancing"
-    lifecycle: "in-progress"
-    evidence: "pkg/config/capabilities/capabilities.go:154"
+    kind: supervisor-capability
+    name: supports_iaas_compute_policies
+    value: true
   vm-eviction:
-    kind: "supervisor-capability"
-    name: "supports_infrapolicy_vm_evacuation"
-    lifecycle: "in-progress"
-    evidence: "pkg/config/capabilities/capabilities.go:148"
+    kind: supervisor-capability
+    name: supports_infrapolicy_vm_evacuation
+    value: true
   vm-config-policy:
-    kind: "supervisor-capability"
-    name: "supports_vm_service_vm_config_policy"
-    lifecycle: "in-progress"
-    evidence: "pkg/config/capabilities/capabilities.go:129"
+    kind: supervisor-capability
+    name: supports_vm_service_vm_config_policy
+    value: true
   vm-hard-affinity:
-    kind: "supervisor-capability"
-    name: "supports_vm_service_vm_hard_affinity_during_execution"
-    lifecycle: "in-progress"
-    evidence: "pkg/config/capabilities/capabilities.go:170"
+    kind: supervisor-capability
+    name: supports_vm_service_vm_hard_affinity_during_execution
+    value: true
   telco-vm-api:
-    kind: "supervisor-capability"
-    name: "supports_telco_vm_service_api"
-    lifecycle: "in-progress"
-    evidence: "pkg/config/capabilities/capabilities.go:113"
+    kind: supervisor-capability
+    name: supports_telco_vm_service_api
+    value: true
   mutable-networks:
-    kind: "supervisor-capability"
-    name: "supports_VM_service_mutable_networks"
-    lifecycle: "in-progress"
-    evidence: "pkg/config/capabilities/capabilities.go:48"
+    kind: supervisor-capability
+    name: supports_VM_service_mutable_networks
+    value: true
   vm-groups:
-    kind: "supervisor-capability"
-    name: "supports_VM_service_VM_groups"
-    lifecycle: "in-progress"
-    evidence: "pkg/config/capabilities/capabilities.go:52"
+    kind: supervisor-capability
+    name: supports_VM_service_VM_groups
+    value: true
   vm-placement-policies:
-    kind: "supervisor-capability"
-    name: "supports_VM_service_VM_placement_policies"
-    lifecycle: "in-progress"
-    evidence: "pkg/config/capabilities/capabilities.go:70"
+    kind: supervisor-capability
+    name: supports_VM_service_VM_placement_policies
+    value: true
   vm-affinity-during-execution:
-    kind: "supervisor-capability"
-    name: "supports_VM_service_VM_affinity_during_execution"
-    lifecycle: "in-progress"
-    evidence: "pkg/config/capabilities/capabilities.go:98"
+    kind: supervisor-capability
+    name: supports_VM_service_VM_affinity_during_execution
+    value: true
   workload-ipv6:
-    kind: "supervisor-capability"
-    name: "supports_workload_ipv6"
-    lifecycle: "in-progress"
-    evidence: "pkg/config/capabilities/capabilities.go:122"
+    kind: supervisor-capability
+    name: supports_workload_ipv6
+    value: true
   shared-disks:
-    kind: "supervisor-capability"
-    name: "supports_shared_disks_with_VM_service_VMs"
-    lifecycle: "in-progress"
-    evidence: "pkg/config/capabilities/capabilities.go:81"
+    kind: supervisor-capability
+    name: supports_shared_disks_with_VM_service_VMs
+    value: true
   all-disks-are-pvcs:
-    kind: "supervisor-capability"
-    name: "supports_vm_service_all_disks_are_pvcs"
-    lifecycle: "in-progress"
-    evidence: "pkg/config/capabilities/capabilities.go:93"
+    kind: supervisor-capability
+    name: supports_vm_service_all_disks_are_pvcs
+    value: true
   multiwriter-disk-vmotion:
-    kind: "supervisor-capability"
-    name: "supports_multiwriter_disk_vmotion"
-    lifecycle: "in-progress"
-    evidence: "test/e2e/vmservice/consts/consts.go:47; test/e2e/vmservice/vmservice/virtualmachine/vm_hardware.go:3138"
-  wffc-pvc:
-    kind: "supervisor-capability"
-    name: "supports_VM_service_WFFC_PVC"
-    lifecycle: "in-progress"
-    evidence: "pkg/config/capabilities/capabilities.go:75"
+    kind: supervisor-capability
+    name: supports_multiwriter_disk_vmotion
+    value: true
   vm-snapshots:
-    kind: "supervisor-capability"
-    name: "supports_VM_service_VM_snapshots"
-    lifecycle: "in-progress"
-    evidence: "pkg/config/capabilities/capabilities.go:61"
+    kind: supervisor-capability
+    name: supports_VM_service_VM_snapshots
+    value: true
   csi-backup-api:
-    kind: "supervisor-capability"
-    name: "supports_CSI_Backup_API"
-    lifecycle: "in-progress"
-    evidence: "pkg/config/capabilities/capabilities.go:174"
+    kind: supervisor-capability
+    name: supports_CSI_Backup_API
+    value: true
   k8s-workload-management:
-    kind: "supervisor-capability"
-    name: "supports_vm_service_k8s_workload_mgmt_api"
-    lifecycle: "in-progress"
-    evidence: "pkg/config/capabilities/capabilities.go:164"
+    kind: supervisor-capability
+    name: supports_vm_service_k8s_workload_mgmt_api
+    value: true
   fast-deploy:
-    kind: "vmop-env"
-    name: "FSS_WCP_VMSERVICE_FAST_DEPLOY"
-    lifecycle: "in-progress"
-    evidence: "pkg/config/env.go:68; pkg/config/env/env.go:189; pkg/providers/vsphere/vmprovider_vm.go:815,2208"
-  backup-restore:
-    kind: "vmop-env"
-    name: "FSS_WCP_VMSERVICE_BACKUPRESTORE"
-    lifecycle: "in-progress"
-    evidence: "test/e2e/vmservice/config/wcp.yaml:41; test/e2e/vmservice/vmservice/viadmin/registervm.go:1270"
+    kind: vmop-env
+    name: FSS_WCP_VMSERVICE_FAST_DEPLOY
+    value: "true"
+    target: &vmop-manager
+      namespace: vmware-system-vmop
+      deployment: vmware-system-vmop-controller-manager
+      container: manager
   class-resize:
-    kind: "vmop-env"
-    name: "FSS_WCP_VMSERVICE_RESIZE_CPU_MEMORY"
-    lifecycle: "in-progress"
-    evidence: "pkg/config/env.go:64; pkg/config/env/env.go:177; webhooks/virtualmachine/validation/virtualmachine_validator.go:732"
-  bring-your-own-key:
-    kind: "vmop-env"
-    name: "FSS_WCP_VMSERVICE_BYOK"
-    lifecycle: "in-progress"
-    evidence: "test/e2e/vmservice/vmservice/virtualmachine/vm_encryption.go:121,303; pkg/config/env.go:67; pkg/config/env/env.go:185; pkg/config/capabilities/capabilities.go:36,308-309"
-    capabilityOverride: "supports_BYOK_encryption"
+    kind: vmop-env
+    name: FSS_WCP_VMSERVICE_RESIZE_CPU_MEMORY
+    value: "true"
+    target: *vmop-manager
+  pod-vm-on-stretched-supervisor:
+    kind: vmop-env
+    name: FSS_PODVMONSTRETCHEDSUPERVISOR
+    value: "true"
+    target: *vmop-manager
+  vm-import-new-network:
+    kind: vmop-env
+    name: FSS_WCP_MOBILITY_VM_IMPORT_NEW_NET
+    value: "true"
+    target: *vmop-manager
+  incremental-restore:
+    kind: vmop-env
+    name: FSS_WCP_VMSERVICE_INCREMENTAL_RESTORE
+    value: "true"
+    target: *vmop-manager
+  workload-isolation-fss:
+    kind: vmop-env
+    name: FSS_WCP_WORKLOAD_DOMAIN_ISOLATION
+    value: "true"
+    target: *vmop-manager
